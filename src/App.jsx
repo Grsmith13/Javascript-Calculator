@@ -1,195 +1,120 @@
-import React, { useState, useReducer } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "./App.css";
-import OperationButton from "./component/OperationButton";
-import DigitButton from "./component/DigitButton";
+import { useReducer } from "react";
+import reducer from "./component/reducer.jsx";
+import { ADD_NUM, OPERATOR, CLEAR, CALC } from "./component/actions.jsx";
 
-export const ACTIONS = {
-  ADD_DIGIT: "add-digit",
-  CHOOSE_OPERATION: "choose-operation",
-  CLEAR: "clear",
-  DELETE_DIGIT: "delete-digit",
-  EVALUATE: "evaluate",
+const defaultState = {
+  dig: " ",
+  prevDig: 0,
+  operation: "",
+  negative: false,
 };
 
-function reducer(state, { type, payload }) {
-  switch (type) {
-    case ACTIONS.ADD_DIGIT:
-      if (state.overwrite) {
-        return {
-          ...state,
-          currentOperand: payload.digit,
-          overwrite: false,
-        };
-      }
-      if (payload.digit === "0" && state.currentOperand === "0") {
-        return state;
-      }
-      if (payload.digit === "." && state.currentOperand.includes(".")) {
-        return state;
-      }
+const NumButton = ({ dispatch, digit }) => {
+  const id = idToWord(digit);
 
-      return {
-        ...state,
-        currentOperand: `${state.currentOperand || ""}${payload.digit}`,
-      };
-    case ACTIONS.CHOOSE_OPERATION:
-      if (state.currentOperand == null && state.previousOperand == null) {
-        return state;
-      }
-
-      if (state.currentOperand == null) {
-        if (payload.operation === "-") {
-          console.log(state.currentOperand);
-          return {
-            ...state,
-            negative: true,
-            operation: state.operation,
-            currentOperand: "-",
-          };
-        }
-        return {
-          ...state,
-          operation: payload.operation,
-        };
-      }
-      if (state.currentOperand === "-") {
-        return {
-          ...state,
-
-          operation: payload.operation,
-          currentOperand: null,
-        };
-      }
-
-      if (state.previousOperand == null) {
-        return {
-          ...state,
-          operation: payload.operation,
-          previousOperand: state.currentOperand,
-          currentOperand: null,
-        };
-      }
-
-      return {
-        ...state,
-        previousOperand: evaluate(state),
-        operation: payload.operation,
-        currentOperand: null,
-      };
-    case ACTIONS.CLEAR:
-      return {
-        currentOperand: 0,
-        previousOperand: null,
-      };
-    case ACTIONS.DELETE_DIGIT:
-      if (state.overwrite) {
-        return {
-          ...state,
-          overwrite: false,
-          currentOperand: null,
-        };
-      }
-      if (state.currentOperand == null) return state;
-      if (state.currentOperand.length === 1) {
-        return { ...state, currentOperand: null };
-      }
-
-      return {
-        ...state,
-        currentOperand: state.currentOperand.slice(0, -1),
-      };
-    case ACTIONS.EVALUATE:
-      if (
-        state.operation == null ||
-        state.currentOperand == null ||
-        state.previousOperand == null
-      ) {
-        return state;
-      }
-
-      return {
-        ...state,
-        overwrite: true,
-        previousOperand: null,
-        operation: null,
-        currentOperand: evaluate(state),
-      };
-  }
-}
-
-const evaluate = ({ currentOperand, previousOperand, operation }) => {
-  const prev = parseFloat(previousOperand);
-  const current = parseFloat(currentOperand);
-  if (isNaN(prev || isNaN(current))) return "";
-
-  let computation = "";
-
-  switch (operation) {
-    case "+":
-      computation = prev + current;
-      break;
-    case "-":
-      computation = prev - current;
-      break;
-    case "x":
-      computation = prev * current;
-      break;
-    case "/":
-      computation = prev / current;
-      break;
-  }
-  return computation.toString();
+  return (
+    <button
+      onClick={() => dispatch({ type: ADD_NUM, payload: { num: digit } })}
+      id={id}
+    >
+      {digit}
+    </button>
+  );
+};
+const OpButton = ({ dispatch, operation }) => {
+  const id = idToWord(operation);
+  return (
+    <button
+      onClick={() => dispatch({ type: OPERATOR, payload: { operation } })}
+      id={id}
+    >
+      {operation}
+    </button>
+  );
 };
 
 function App() {
-  const [{ currentOperand, previousOperand, operation, negative }, dispatch] =
-    useReducer(reducer, {});
-
+  const [state, dispatch] = useReducer(reducer, defaultState);
+  const { dig, prevDig, operation } = state;
   return (
-    <div className="calculator-grid">
-      <div className="output">
-        <div className="previous-operand">
-          {previousOperand} {operation}
-        </div>
-        <div id="display" className="current-operand">
-          {currentOperand}
-        </div>
+    <>
+      <div style={{ alignItems: "right" }}>
+        <p>
+          {prevDig}
+          {operation}
+        </p>
+        <p id="display">{dig}</p>
       </div>
-      <button
-        className="span-two"
-        id="clear"
-        onClick={() => dispatch({ type: ACTIONS.CLEAR })}
-      >
-        AC
-      </button>
-      <button onClick={() => dispatch({ type: ACTIONS.DELETE_DIGIT })}>
-        DEL
-      </button>
-      <OperationButton id="divide" operation="/" dispatch={dispatch} />
-      <DigitButton id="one" digit="1" dispatch={dispatch} />
-      <DigitButton id="two" digit="2" dispatch={dispatch} />
-      <DigitButton id="three" digit="3" dispatch={dispatch} />
-      <OperationButton id="multiply" operation="x" dispatch={dispatch} />
-      <DigitButton id="four" digit="4" dispatch={dispatch} />
-      <DigitButton id="five" digit="5" dispatch={dispatch} />
-      <DigitButton id="six" digit="6" dispatch={dispatch} />
-      <OperationButton id="add" operation="+" dispatch={dispatch} />
-      <DigitButton id="seven" digit="7" dispatch={dispatch} />
-      <DigitButton id="eight" digit="8" dispatch={dispatch} />
-      <DigitButton id="nine" digit="9" dispatch={dispatch} />
-      <OperationButton id="subtract" operation="-" dispatch={dispatch} />
-      <DigitButton id="decimal" digit="." dispatch={dispatch} />
-      <DigitButton id="zero" digit="0" dispatch={dispatch} />
-      <button
-        id="equals"
-        className="span-two"
-        onClick={() => dispatch({ type: ACTIONS.EVALUATE })}
-      >
-        =
-      </button>
-    </div>
+      <div>
+        <button id="clear" onClick={() => dispatch({ type: CLEAR })}>
+          AC
+        </button>
+        <button id="equals" onClick={() => dispatch({ type: CALC })}>
+          =
+        </button>
+      </div>
+      <div>
+        <NumButton digit="7" dispatch={dispatch} />
+        <NumButton digit="8" dispatch={dispatch} />
+        <NumButton digit="9" dispatch={dispatch} />
+        <OpButton operation="-" dispatch={dispatch} id="minus" />
+      </div>
+      <div>
+        <NumButton digit="4" dispatch={dispatch} />
+        <NumButton digit="5" dispatch={dispatch} />
+        <NumButton digit="6" dispatch={dispatch} />
+        <OpButton operation="+" dispatch={dispatch} id="add" />
+      </div>
+      <div>
+        <NumButton digit="1" dispatch={dispatch} />
+        <NumButton digit="2" dispatch={dispatch} />
+        <NumButton digit="3" dispatch={dispatch} />
+        <OpButton operation="*" dispatch={dispatch} id="multiply" />
+      </div>
+      <div>
+        <NumButton digit="0" dispatch={dispatch} />
+        <NumButton digit="." dispatch={dispatch} />
+        <OpButton operation="/" dispatch={dispatch} id="divide" />
+      </div>
+    </>
   );
 }
 
 export default App;
+
+const idToWord = (id) => {
+  switch (id) {
+    case "0":
+      return "zero";
+    case "1":
+      return "one";
+    case "2":
+      return "two";
+    case "3":
+      return "three";
+    case "4":
+      return "four";
+    case "5":
+      return "five";
+    case "6":
+      return "six";
+    case "7":
+      return "seven";
+    case "8":
+      return "eight";
+    case "9":
+      return "nine";
+    case "/":
+      return "divide";
+    case "*":
+      return "multiply";
+    case "+":
+      return "add";
+    case "-":
+      return "subtract";
+    case ".":
+      return "decimal";
+    default:
+      return id;
+  }
+};
