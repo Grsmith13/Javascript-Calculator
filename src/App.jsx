@@ -1,7 +1,7 @@
 import { useReducer } from "react";
 import reducer from "./component/reducer.jsx";
 import { ADD_NUM, OPERATOR, CLEAR, CALC } from "./component/actions.jsx";
-
+//  using the useReducer and a lot of structuring  was heavily thanks to Web Dev Simplified's tutorials. 
 const defaultState = {
   dig: " ",
   prevDig: 0,
